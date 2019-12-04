@@ -52,7 +52,7 @@ class Server:
 	
 	def run_thread(self, conn, addr):
 		while True:
-			message = conn.recv(1024)
+			message = conn.recv(2048)
 			if(message.decode() != ""):
 				newMesages.put(message.decode() )
 			if(not newMesages.empty()):

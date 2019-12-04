@@ -1,27 +1,48 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 16 10:30:08 2019
-Chat client
-@author: Anthony Salaris, Andrew Galvin, Endi Caushie 
-"""
+from socket import *
+import sys
+import threading
+host = "127.0.0.1"
+port = 9999
 
-import socket
-def client_program():
-    host = socket.gethostname()
-    port = 5089
-    client_socket = socket.socket()
-    client_socket.connect((host, port))
-    #address = client_socket
-    print('Connecting to: ' + socket.gethostbyname(host))
-    message = input(" -> ")
-    while message.lower().strip() != 'disconnect':
-        client_socket.send(message.encode())
-        data = client_socket.recv(1024).decode()
-        if data == "disconnect":
-            print('Host disconnected')
-            break
-        print('Host: ' + data)
-        message = input(" -> ")
-    client_socket.close()
-if __name__ == '__main__':
-    client_program()
+class listen(threading.Thread):
+    def __init__(self, client):
+        threading.Thread.__init__(self)
+        self.client = client
+        self.setDaemon(True)
+
+    def run(self):
+        while(True):
+            data = self.client.recv(1024)
+            if data.decode() == "exit":
+                sys.exit(1)
+            print(data.decode())
+
+
+
+
+if __name__ == "__main__":
+    try:
+        clientSocket = socket(AF_INET, SOCK_STREAM)
+        clientSocket.connect((host, port))
+        print("Welcome to chat!")
+        print("Type your message and press 'Enter' to send.")
+        print("Send '/name' command to change your username.")
+        print("Send '/quit' command to quit.")
+    except error as e:
+            if clientSocket:
+                clientSocket.close()
+            print("Could not open a socket: "+ str(e))
+            sys.exit(1)
+
+    l = listen(clientSocket)
+    l.start()
+    message = input()
+    while message!="/quit":
+        #sys.stdout.flush()
+        clientSocket.send(message.encode())
+        #data = self.clientSocket.recv(1024)
+        #data = data.decode()
+        #print("Recieved: "+str(data))
+        message= input()
+
+    clientSocket.close()
