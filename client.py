@@ -1,8 +1,10 @@
 from socket import *
 import sys
 import threading
-host = "127.0.0.1"
-port = 9999
+
+host = "10.220.82.40"  # 127.0.0.1
+port = 5089
+
 
 class listen(threading.Thread):
     def __init__(self, client):
@@ -11,38 +13,44 @@ class listen(threading.Thread):
         self.setDaemon(True)
 
     def run(self):
-        while(True):
-            data = self.client.recv(1024)
-            if data.decode() == "exit":
-                sys.exit(1)
-            print(data.decode())
+        connected = True
+        while connected:
+            try:
+                data = self.client.recv(2048).decode()
+                if data == "exit":
+                    sys.exit(1)
+                #  elif data.startswith("/filetransfer"):
+                #     fileTransfer(self)
+                else:
+                    print(data)
 
-
+            except Exception as e:
+                connected = False
+                print("You have disconnected")
 
 
 if __name__ == "__main__":
+    clientSocket = socket(AF_INET, SOCK_STREAM)
+    clientSocket.connect((host, port))
     try:
-        clientSocket = socket(AF_INET, SOCK_STREAM)
-        clientSocket.connect((host, port))
-        print("Welcome to chat!")
-        print("Type your message and press 'Enter' to send.")
-        print("Send '/name' command to change your username.")
-        print("Send '/quit' command to quit.")
+        print("Welcome to the chat!")
+        print("Type out a message and press 'Enter' to send it")
+        print("Use '/name' command to change your username.")
+        print("Use '/quit' command to quit.")
     except error as e:
-            if clientSocket:
-                clientSocket.close()
-            print("Could not open a socket: "+ str(e))
-            sys.exit(1)
+        if clientSocket:
+            clientSocket.close()
+        print("Could not open a socket: " + str(e))
+        sys.exit(1)
 
     l = listen(clientSocket)
     l.start()
     message = input()
-    while message!="/quit":
-        #sys.stdout.flush()
+    while message != "/quit":
+        # sys.stdout.flush()
         clientSocket.send(message.encode())
-        #data = self.clientSocket.recv(1024)
-        #data = data.decode()
-        #print("Recieved: "+str(data))
-        message= input()
-
+        # data = self.clientSocket.recv(1024)
+        # data = data.decode()
+        # print("Recieved: "+str(data))
+        message = input()
     clientSocket.close()

@@ -9,8 +9,8 @@ QUIT = False
 
 class Server:
     def __init__(self):
-        self.host = "127.0.0.1"
-        self.port = 9999
+        self.host = "10.220.82.40"
+        self.port = 5089
         self.threads = []
         self.backlog = 10
 
@@ -83,8 +83,17 @@ class Client(threading.Thread):
                     self.client.send(("Your username has been changed to %s" % self.name).encode())
                 elif cmd == "/quit":
                     self.remove()
+                elif cmd.startswith("/filetransfer"):
+                    self.client.send("Please enter the filename of the file: ".encode())
+                    filename = self.client.recv(1024).decode()
+                    file = open(filename, 'rb')
+                    file_data = file.read(4096)
+                    for each in server.threads:
+                        if each != self and each.is_alive():
+                            self.fileTransfer(each)
+                    print("Data has been transmitted successfully")
                 else:
-                    msg = "%s>>>%s" % (self.name, cmd)
+                    msg = "%s: %s" % (self.name, cmd)
                     for each in server.threads:
                         if each != self:
                             each.client.send(msg.encode())
@@ -102,6 +111,18 @@ class Client(threading.Thread):
         server.threads.remove(self)
         QUIT = True
         self.done = True
+
+    def fileTransfer(self, user):
+        # filename = input(str("Please enter a filename for the incoming file: "))
+        user.client.send("Please enter a filename for the incoming file: ".encode())
+        filename = user.client.recv(1024).decode()
+        with open(filename, 'wb') as file:
+            file_data = user.client.recv(4096)
+            file.write(file_data)
+        # file = open(filename, 'wb')
+
+        # file.close()
+        print("File has been received successfully.")
 
 
 if __name__ == "__main__":
