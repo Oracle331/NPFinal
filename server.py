@@ -9,8 +9,8 @@ QUIT = False
 
 class Server:
     def __init__(self):
-        self.host = "127.0.0.1"
-        self.port = 9999
+        self.host = "10.220.82.40"
+        self.port = 5089
         self.threads = []
         self.backlog = 10
 
@@ -83,6 +83,15 @@ class Client(threading.Thread):
                     self.client.send(("Your username has been changed to %s" % self.name).encode())
                 elif cmd == "/quit":
                     self.remove()
+                elif cmd.startswith("/filetransfer"):
+                    self.client.send("Please enter the filename of the file: ".encode())
+                    filename = self.client.recv(1024).decode()
+                    file = open(filename, 'rb')
+                    file_data = file.read(4096)
+                    for each in server.threads:
+                        if each != self and each.is_alive():
+                            each.client.send(file_data)
+                    print("Data has been transmitted successfully")
                 else:
                     msg = "%s>>>%s" % (self.name, cmd)
                     for each in server.threads:
