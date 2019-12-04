@@ -6,12 +6,13 @@ import time
 
 QUIT = False
 
+
 class Server:
     def __init__(self):
         self.host = "127.0.0.1"
         self.port = 9999
         self.threads = []
-        self.backlog = 10 
+        self.backlog = 10
 
     def run(self):
 
@@ -22,7 +23,7 @@ class Server:
                 self.sock.bind((self.host, self.port))
                 self.sock.listen(self.backlog)
 
-                print("Server started at "+self.host+":"+str(self.port))
+                print("Server started at " + self.host + ":" + str(self.port))
                 break
             except Exception as err:
                 print('Socket connection error... ')
@@ -36,39 +37,39 @@ class Server:
                 new_thread = Client(client)
 
                 print("Connected by ", addr)
-                msg = ("Connected by %s at %s" %(new_thread.name, addr)).encode()
+                msg = ("User: %s connected from: %s" % (new_thread.name, addr)).encode()
                 for each in self.threads:
                     each.client.send(msg)
 
                 self.threads.append(new_thread)
                 new_thread.start()
 
-
                 for thread in self.threads:
                     if not thread.is_alive():
                         self.threads.remove(thread)
                         thread.join()
-                        #time.sleep(1)
+                        # time.sleep(1)
         except KeyboardInterrupt:
-                print("Terminating by Ctrl+C")
+            print("Terminating by Ctrl+C")
         except Exception as err:
-            print("Exception: %s\nClosing" %err)
+            print("Exception: %s\nClosing" % err)
         for thread in self.threads:
             thread.join()
         self.sock.close()
 
 
 class Client(threading.Thread):
+
     def __init__(self, client):
         threading.Thread.__init__(self)
         self.client = client
         time.sleep(1)
 
-    def run(self):
-        global QUIT
-        done = False
+        self.done = False
 
-        while not done:
+    def run(self):
+
+        while not self.done:
             try:
                 cmd = self.client.recv(1024).decode()
                 if cmd.startswith("/name"):
@@ -77,28 +78,31 @@ class Client(threading.Thread):
                     self.name = self.client.recv(1024).decode()
                     msg = "%s has changed his username to %s" % (old_name, self.name)
                     for each in server.threads:
-                        if each != self and each.isAlive():
+                        if each != self and each.is_alive():
                             each.client.send(msg.encode())
                     self.client.send(("Your username has been changed to %s" % self.name).encode())
                 elif cmd == "/quit":
-                    self.client.send("exit".encode())
-                    server.threads.remove(self)
-                    for each in server.threads:
-                        each.client.send(("%s Disconnected" % self.name).encode())
-                    QUIT = True
-                    done = True
+                    self.remove()
                 else:
-                    msg = "%s===>%s" % (self.name, cmd)
+                    msg = "%s>>>%s" % (self.name, cmd)
                     for each in server.threads:
                         if each != self:
                             each.client.send(msg.encode())
             except Exception as e:
                 print("Connection lost", e)
-                done = True
-                continue
-
+                # self.remove()
+                break
+                # continue
+        server.threads.remove(self)
         self.client.close()
         return
+
+    def remove(self):
+        self.client.send("exit".encode())
+        server.threads.remove(self)
+        QUIT = True
+        self.done = True
+
 
 if __name__ == "__main__":
     server = Server()
